@@ -1,0 +1,17 @@
+{
+  "author": [
+    "Hooskworks"
+  ],
+  "install_msg": "Thanks for install!",
+  "short": "joins, leaves, deleted and edited messages to a specified channel",
+  "description": "Log joins, leaves, deleted and edited messages to a specified channel",
+  "min_bot_version": "3.4.0",
+  "tags": [
+    "messages",
+    "activity",
+    "join",
+    "leave",
+    "logs"
+  ],
+  "end_user_data_statement": "This cog does not persistently store data or metadata about users."
+}
