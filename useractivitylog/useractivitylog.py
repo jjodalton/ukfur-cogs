@@ -37,7 +37,7 @@ _ = Translator("MessagesLog", __file__)
 
 
 @cog_i18n(_)
-class ActivityLog(commands.Cog):
+class UserActivityLog(commands.Cog):
     """Log joins, leaves, deleted and edited messages to the defined channel"""
 
     __version__ = "1"
