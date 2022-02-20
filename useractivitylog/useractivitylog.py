@@ -46,7 +46,7 @@ class UserActivityLog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=0xB0FCB74A18A548D084B6312E018AC474)
+        self.config = Config.get_conf(self, identifier=0x91daa6db0fac6024f04fd179)
         default_guild = {
             "delete_channel": None,
             "edit_channel": None,
