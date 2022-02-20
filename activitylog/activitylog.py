@@ -525,9 +525,9 @@ class ActivityLog(commands.Cog):
             pass
 
 
-"""
-This is our listener for members joining
-"""
+    """
+    This is our listener for members joining
+    """
     @commands.Cog.listener("on_member_join")
     async def message_user_join(self, message: discord.Message):
         # If there is no message then return
@@ -597,9 +597,9 @@ This is our listener for members joining
         except discord.Forbidden:
             pass
 
-"""
-This is our listener for members leaving.
-"""
+    """
+    This is our listener for members leaving.
+    """
     @commands.Cog.listener("on_member_leave")
     async def message_user_leave(self, message: discord.Message):
         # If there is no message then return
