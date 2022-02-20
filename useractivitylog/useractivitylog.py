@@ -89,7 +89,7 @@ class UserActivityLog(commands.Cog):
     async def red_delete_data_for_user(self, **kwargs):
         return
 
-    @commands.group(autohelp=True, aliases=["useractivitylog", "useractivitylogs"])
+    @commands.group(autohelp=True, aliases=["useractivitieslog", "useractivitylogs"])
     @commands.admin_or_permissions(manage_guild=True)
     async def useractivitylog(self, ctx):
         """Manage message logging"""
