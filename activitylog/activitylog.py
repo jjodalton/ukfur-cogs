@@ -41,6 +41,7 @@ class ActivityLog(commands.Cog):
     """Log joins, leaves, deleted and edited messages to the defined channel"""
 
     __version__ = "1"
+
     # noinspection PyMissingConstructor
 
     def __init__(self, bot):
@@ -219,9 +220,9 @@ class ActivityLog(commands.Cog):
 
     @activitylog.command()
     async def ignore(
-        self,
-        ctx,
-        *ignore: Union[discord.Member, discord.TextChannel, discord.CategoryChannel],
+            self,
+            ctx,
+            *ignore: Union[discord.Member, discord.TextChannel, discord.CategoryChannel],
     ):
         """Manage message logging blocklist
 
@@ -288,21 +289,21 @@ class ActivityLog(commands.Cog):
             return
 
         if (
-            message.channel.category
-            and message.channel.category.id
-            in await self.config.guild(message.guild).ignored_categories()
+                message.channel.category
+                and message.channel.category.id
+                in await self.config.guild(message.guild).ignored_categories()
         ):
             return
 
         if any(
-            [
-                not await self.config.guild(message.guild).deletion(),
-                (await self.bot.get_context(message)).command,
-                message.channel.id in await self.config.guild(message.guild).ignored_channels(),
-                message.author.id in await self.config.guild(message.guild).ignored_users(),
-                message.author.bot,
-                message.channel.nsfw and not logchannel.nsfw,
-            ]
+                [
+                    not await self.config.guild(message.guild).deletion(),
+                    (await self.bot.get_context(message)).command,
+                    message.channel.id in await self.config.guild(message.guild).ignored_channels(),
+                    message.author.id in await self.config.guild(message.guild).ignored_users(),
+                    message.author.bot,
+                    message.channel.nsfw and not logchannel.nsfw,
+                ]
         ):
             return
 
@@ -355,17 +356,17 @@ class ActivityLog(commands.Cog):
             return
 
         if (
-            channel.category
-            and channel.category.id in await self.config.guild(guild).ignored_categories()
+                channel.category
+                and channel.category.id in await self.config.guild(guild).ignored_categories()
         ):
             return
 
         if any(
-            [
-                not await self.config.guild(guild).deletion(),
-                channel.id in await self.config.guild(guild).ignored_channels(),
-                channel.nsfw and not logchannel.nsfw,
-            ]
+                [
+                    not await self.config.guild(guild).deletion(),
+                    channel.id in await self.config.guild(guild).ignored_channels(),
+                    channel.nsfw and not logchannel.nsfw,
+                ]
         ):
             return
 
@@ -404,17 +405,17 @@ class ActivityLog(commands.Cog):
             return
 
         if (
-            channel.category
-            and channel.category.id in await self.config.guild(guild).ignored_categories()
+                channel.category
+                and channel.category.id in await self.config.guild(guild).ignored_categories()
         ):
             return
 
         if any(
-            [
-                not await self.config.guild(guild).deletion(),
-                channel.id in await self.config.guild(guild).ignored_channels(),
-                channel.nsfw and not logchannel.nsfw,
-            ]
+                [
+                    not await self.config.guild(guild).deletion(),
+                    channel.id in await self.config.guild(guild).ignored_channels(),
+                    channel.nsfw and not logchannel.nsfw,
+                ]
         ):
             return
 
@@ -447,11 +448,11 @@ class ActivityLog(commands.Cog):
         embed = discord.Embed(
             title=_("Multiple messages deleted"),
             description=_("{} messages removed").format(len(payload.message_ids))
-            + (
-                "\n" + _("{} messages saved to file above").format(len(payload.cached_messages))
-                if payload.cached_messages and save_bulk
-                else ""
-            ),
+                        + (
+                            "\n" + _("{} messages saved to file above").format(len(payload.cached_messages))
+                            if payload.cached_messages and save_bulk
+                            else ""
+                        ),
             timestamp=datetime.now(timezone.utc),
             color=await self.bot.get_embed_colour(channel),
         )
@@ -476,22 +477,22 @@ class ActivityLog(commands.Cog):
             return
 
         if (
-            before.channel.category
-            and before.channel.category.id
-            in await self.config.guild(before.guild).ignored_categories()
+                before.channel.category
+                and before.channel.category.id
+                in await self.config.guild(before.guild).ignored_categories()
         ):
             return
 
         if any(
-            [
-                not await self.config.guild(before.guild).editing(),
-                (await self.bot.get_context(before)).command,
-                before.channel.id in await self.config.guild(before.guild).ignored_channels(),
-                before.author.id in await self.config.guild(before.guild).ignored_users(),
-                before.content == after.content,
-                before.author.bot,
-                before.channel.nsfw and not logchannel.nsfw,
-            ]
+                [
+                    not await self.config.guild(before.guild).editing(),
+                    (await self.bot.get_context(before)).command,
+                    before.channel.id in await self.config.guild(before.guild).ignored_channels(),
+                    before.author.id in await self.config.guild(before.guild).ignored_users(),
+                    before.content == after.content,
+                    before.author.bot,
+                    before.channel.nsfw and not logchannel.nsfw,
+                ]
         ):
             return
 
@@ -524,10 +525,10 @@ class ActivityLog(commands.Cog):
         except discord.Forbidden:
             pass
 
-
     """
     This is our listener for members joining
     """
+
     @commands.Cog.listener("on_member_join")
     async def message_user_join(self, message: discord.Message):
         # If there is no message then return
@@ -600,6 +601,7 @@ class ActivityLog(commands.Cog):
     """
     This is our listener for members leaving.
     """
+
     @commands.Cog.listener("on_member_leave")
     async def message_user_leave(self, message: discord.Message):
         # If there is no message then return
