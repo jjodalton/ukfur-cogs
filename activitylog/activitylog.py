@@ -40,7 +40,7 @@ _ = Translator("MessagesLog", __file__)
 class ActivityLog(commands.Cog):
     """Log joins, leaves, deleted and edited messages to the defined channel"""
 
-    __version__ = "2.3.13"
+    __version__ = "1"
     # noinspection PyMissingConstructor
 
     def __init__(self, bot):
@@ -532,10 +532,12 @@ This is our listener for members joining
     async def message_user_join(self, message: discord.Message):
         # If there is no message then return
         if not message.guild:
+            log.debug("user_join: not message.guild return")
             return
 
         #  if the bot is disabled in the message server then return
         if await self.bot.cog_disabled_in_guild(self, message.guild):
+            log.debug("user_join: cog disabled in guild return")
             return
 
         # try to get the logging channel for the messages server
@@ -545,6 +547,7 @@ This is our listener for members joining
 
         # if the logging channel isn't set then return
         if not logchannel:
+            log.debug("user_join: No logchannel return")
             return
 
         # if the message category is in the ignored category for this server then return
@@ -553,9 +556,10 @@ This is our listener for members joining
                 and message.channel.category.id
                 in await self.config.guild(message.guild).ignored_categories()
         ):
+            log.debug("user_join: message category in ignored list for server")
             return
 
-        # if
+        # if message in ignored channel, by ignored user, by bot or in nsfw channel
         if any(
                 [
                     not await self.config.guild(message.guild).deletion(),
@@ -566,6 +570,7 @@ This is our listener for members joining
                     message.channel.nsfw and not logchannel.nsfw,
                 ]
         ):
+            log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
             return
 
         # translate the message to be logged based on server locale
@@ -573,28 +578,14 @@ This is our listener for members joining
 
         # start building the log message
         embed = discord.Embed(
-            title=_("Message deleted"),
-            description=message.system_content or chat.inline(_("No text")),
+            title=_("User Joined"),
+            description=chat.inline(_("User has joined the server")),
             timestamp=message.created_at,
-            color=message.author.color,
+            colour=message.author.color,
         )
-
-        # if the message has attachments then add those to the log message.
-        # this should never be needed but I'm leaving it for completeness.
-        if message.attachments:
-            embed.add_field(
-                name=_("Attachments"),
-                value="\n".join(
-                    _("[{0.filename}]({0.url}) ([Cached]({0.proxy_url}))").format(a)
-                    for a in message.attachments
-                ),
-            )
 
         # get message author from incoming message
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-
-        # get information from incoming message
-        embed.set_footer(text=_("ID: {} • Sent at").format(message.id))
 
         # add information about the channel the message was sent in
         embed.add_field(name=_("Channel"), value=message.channel.mention)
@@ -613,10 +604,12 @@ This is our listener for members leaving.
     async def message_user_leave(self, message: discord.Message):
         # If there is no message then return
         if not message.guild:
+            log.debug("user_join: not message.guild return")
             return
 
         #  if the bot is disabled in the message server then return
         if await self.bot.cog_disabled_in_guild(self, message.guild):
+            log.debug("user_join: cog disabled in guild return")
             return
 
         # try to get the logging channel for the messages server
@@ -626,6 +619,7 @@ This is our listener for members leaving.
 
         # if the logging channel isn't set then return
         if not logchannel:
+            log.debug("user_join: No logchannel return")
             return
 
         # if the message category is in the ignored category for this server then return
@@ -634,9 +628,10 @@ This is our listener for members leaving.
                 and message.channel.category.id
                 in await self.config.guild(message.guild).ignored_categories()
         ):
+            log.debug("user_join: message category in ignored list for server")
             return
 
-        # if
+        # if message in ignored channel, by ignored user, by bot or in nsfw channel
         if any(
                 [
                     not await self.config.guild(message.guild).deletion(),
@@ -647,6 +642,7 @@ This is our listener for members leaving.
                     message.channel.nsfw and not logchannel.nsfw,
                 ]
         ):
+            log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
             return
 
         # translate the message to be logged based on server locale
@@ -654,28 +650,14 @@ This is our listener for members leaving.
 
         # start building the log message
         embed = discord.Embed(
-            title=_("Message deleted"),
-            description=message.system_content or chat.inline(_("No text")),
+            title=_("User Left"),
+            description=chat.inline(_("User has left the server")),
             timestamp=message.created_at,
-            color=message.author.color,
+            colour=message.author.color,
         )
-
-        # if the message has attachments then add those to the log message.
-        # this should never be needed but I'm leaving it for completeness.
-        if message.attachments:
-            embed.add_field(
-                name=_("Attachments"),
-                value="\n".join(
-                    _("[{0.filename}]({0.url}) ([Cached]({0.proxy_url}))").format(a)
-                    for a in message.attachments
-                ),
-            )
 
         # get message author from incoming message
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-
-        # get information from incoming message
-        embed.set_footer(text=_("ID: {} • Sent at").format(message.id))
 
         # add information about the channel the message was sent in
         embed.add_field(name=_("Channel"), value=message.channel.mention)
