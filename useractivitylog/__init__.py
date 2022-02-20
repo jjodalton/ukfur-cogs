@@ -1,4 +1,4 @@
-from .activitylog import ActivityLog
+from .useractivitylog import UserActivityLog
 
 __red_end_user_data_statement__ = (
     "This cog does not persistently store data or metadata about users."
@@ -6,6 +6,6 @@ __red_end_user_data_statement__ = (
 
 
 async def setup(bot):
-    cog = ActivityLog(bot)
+    cog = UserActivityLog(bot)
     await cog.initialize()
     bot.add_cog(cog)

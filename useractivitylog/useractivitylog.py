@@ -32,7 +32,7 @@ async def ignore_config_add(config: list, item):
         config.append(item.id)
 
 
-log = logging.getLogger("red.ukfur-cogs.activitylog")
+log = logging.getLogger("red.ukfur-cogs.useractivitylog")
 _ = Translator("MessagesLog", __file__)
 
 
@@ -89,13 +89,13 @@ class ActivityLog(commands.Cog):
     async def red_delete_data_for_user(self, **kwargs):
         return
 
-    @commands.group(autohelp=True, aliases=["activitylog", "activitylogs"])
+    @commands.group(autohelp=True, aliases=["useractivitylog", "useractivitylogs"])
     @commands.admin_or_permissions(manage_guild=True)
-    async def activitylog(self, ctx):
+    async def useractivitylog(self, ctx):
         """Manage message logging"""
         pass
 
-    @activitylog.group(name="channel")
+    @useractivitylog.group(name="channel")
     async def set_channel(self, ctx):
         """Set the channels for logs"""
         pass
@@ -168,7 +168,7 @@ class ActivityLog(commands.Cog):
             settings.append(_("Leave: {}").format(ctx.guild.get_channel(leave)))
         await ctx.send("\n".join(settings) or chat.info(_("No channels set")))
 
-    @activitylog.group()
+    @useractivitylog.group()
     async def toggle(self, ctx):
         """Toggle logging"""
         pass
@@ -218,7 +218,7 @@ class ActivityLog(commands.Cog):
         state = _("enabled") if await self.config.guild(ctx.guild).leaving() else _("disabled")
         await ctx.send(chat.info(_("Leave logging {}").format(state)))
 
-    @activitylog.command()
+    @useractivitylog.command()
     async def ignore(
             self,
             ctx,
