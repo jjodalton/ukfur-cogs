@@ -1,0 +1,17 @@
+{
+  "author": [
+    "Hooskworks"
+  ],
+  "install_msg": "Thanks for install!",
+  "short": "sticky welcome message in dedicated channel",
+  "description": "Auto roles new users and sends a personal sticky message",
+  "min_bot_version": "3.4.0",
+  "tags": [
+    "role",
+    "intro",
+    "join",
+    "channel",
+    "logs"
+  ],
+  "end_user_data_statement": "This cog does not persistently store data or metadata about users."
+}
