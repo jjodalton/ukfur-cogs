@@ -162,9 +162,9 @@ class UserActivityLog(commands.Cog):
             settings.append(_("Edit: {}").format(ctx.guild.get_channel(edit)))
         if bulk := await self.config.guild(ctx.guild).bulk_delete_channel():
             settings.append(_("Bulk deletion: {}").format(ctx.guild.get_channel(bulk)))
-        if bulk := await self.config.guild(ctx.guild).join_channel():
+        if join := await self.config.guild(ctx.guild).join_channel():
             settings.append(_("Join: {}").format(ctx.guild.get_channel(join)))
-        if bulk := await self.config.guild(ctx.guild).leave_channel():
+        if leave := await self.config.guild(ctx.guild).leave_channel():
             settings.append(_("Leave: {}").format(ctx.guild.get_channel(leave)))
         await ctx.send("\n".join(settings) or chat.info(_("No channels set")))
 
