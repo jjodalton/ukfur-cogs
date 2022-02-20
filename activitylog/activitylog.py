@@ -217,7 +217,7 @@ class ActivityLog(commands.Cog):
         state = _("enabled") if await self.config.guild(ctx.guild).leaving() else _("disabled")
         await ctx.send(chat.info(_("Leave logging {}").format(state)))
 
-    @mactivitylog.command()
+    @activitylog.command()
     async def ignore(
         self,
         ctx,
@@ -277,19 +277,23 @@ class ActivityLog(commands.Cog):
     async def message_deleted(self, message: discord.Message):
         if not message.guild:
             return
+
         if await self.bot.cog_disabled_in_guild(self, message.guild):
             return
+
         logchannel = message.guild.get_channel(
             await self.config.guild(message.guild).delete_channel()
         )
         if not logchannel:
             return
+
         if (
             message.channel.category
             and message.channel.category.id
             in await self.config.guild(message.guild).ignored_categories()
         ):
             return
+
         if any(
             [
                 not await self.config.guild(message.guild).deletion(),
@@ -301,13 +305,16 @@ class ActivityLog(commands.Cog):
             ]
         ):
             return
+
         await set_contextual_locales_from_guild(self.bot, message.guild)
+
         embed = discord.Embed(
             title=_("Message deleted"),
             description=message.system_content or chat.inline(_("No text")),
             timestamp=message.created_at,
             color=message.author.color,
         )
+
         if message.attachments:
             embed.add_field(
                 name=_("Attachments"),
@@ -316,36 +323,43 @@ class ActivityLog(commands.Cog):
                     for a in message.attachments
                 ),
             )
+
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+
         embed.set_footer(text=_("ID: {} • Sent at").format(message.id))
+
         embed.add_field(name=_("Channel"), value=message.channel.mention)
+
         try:
             await logchannel.send(embed=embed)
         except discord.Forbidden:
             pass
 
-    #####################
-    # I've gotten to here
-    #####################
-
     @commands.Cog.listener("on_raw_message_delete")
     async def raw_message_deleted(self, payload: discord.RawMessageDeleteEvent):
         if payload.cached_message:
             return
+
         if not payload.guild_id:
             return
+
         if await self.bot.cog_disabled_in_guild_raw(self.qualified_name, payload.guild_id):
             return
+
         guild = self.bot.get_guild(payload.guild_id)
+
         channel = self.bot.get_channel(payload.channel_id)
+
         logchannel = guild.get_channel(await self.config.guild(guild).delete_channel())
         if not logchannel:
             return
+
         if (
             channel.category
             and channel.category.id in await self.config.guild(guild).ignored_categories()
         ):
             return
+
         if any(
             [
                 not await self.config.guild(guild).deletion(),
@@ -354,14 +368,19 @@ class ActivityLog(commands.Cog):
             ]
         ):
             return
+
         await set_contextual_locales_from_guild(self.bot, guild)
+
         embed = discord.Embed(
             title=_("Old message deleted"),
             timestamp=discord.utils.snowflake_time(payload.message_id),
             color=await self.bot.get_embed_colour(channel),
         )
+
         embed.set_footer(text=_("ID: {} • Sent at").format(payload.message_id))
+
         embed.add_field(name=_("Channel"), value=channel.mention)
+
         try:
             await logchannel.send(embed=embed)
         except discord.Forbidden:
@@ -372,18 +391,24 @@ class ActivityLog(commands.Cog):
         # sourcery skip: comprehension-to-generator
         if not payload.guild_id:
             return
+
         if await self.bot.cog_disabled_in_guild_raw(self.qualified_name, payload.guild_id):
             return
+
         guild = self.bot.get_guild(payload.guild_id)
+
         channel = self.bot.get_channel(payload.channel_id)
+
         logchannel = guild.get_channel(await self.config.guild(guild).bulk_delete_channel())
         if not logchannel:
             return
+
         if (
             channel.category
             and channel.category.id in await self.config.guild(guild).ignored_categories()
         ):
             return
+
         if any(
             [
                 not await self.config.guild(guild).deletion(),
@@ -392,9 +417,13 @@ class ActivityLog(commands.Cog):
             ]
         ):
             return
+
         await set_contextual_locales_from_guild(self.bot, guild)
+
         save_bulk = await self.config.guild(guild).save_bulk()
+
         messages_dump = None
+
         if payload.cached_messages and save_bulk:
             n = "\n"
             messages_dump = chat.text_to_file(
@@ -414,6 +443,7 @@ class ActivityLog(commands.Cog):
                 ),
                 filename=f"{guild.id}.txt",
             )
+
         embed = discord.Embed(
             title=_("Multiple messages deleted"),
             description=_("{} messages removed").format(len(payload.message_ids))
@@ -425,7 +455,9 @@ class ActivityLog(commands.Cog):
             timestamp=datetime.now(timezone.utc),
             color=await self.bot.get_embed_colour(channel),
         )
+
         embed.add_field(name=_("Channel"), value=channel.mention)
+
         try:
             await logchannel.send(embed=embed, file=messages_dump)
         except discord.Forbidden:
@@ -435,17 +467,21 @@ class ActivityLog(commands.Cog):
     async def message_edited(self, before: discord.Message, after: discord.Message):
         if not before.guild:
             return
+
         if await self.bot.cog_disabled_in_guild(self, before.guild):
             return
+
         logchannel = before.guild.get_channel(await self.config.guild(before.guild).edit_channel())
         if not logchannel:
             return
+
         if (
             before.channel.category
             and before.channel.category.id
             in await self.config.guild(before.guild).ignored_categories()
         ):
             return
+
         if any(
             [
                 not await self.config.guild(before.guild).editing(),
@@ -458,14 +494,18 @@ class ActivityLog(commands.Cog):
             ]
         ):
             return
+
         await set_contextual_locales_from_guild(self.bot, before.guild)
+
         embed = discord.Embed(
             title=_("Message edited"),
             description=before.content or chat.inline(_("No text")),
             timestamp=before.created_at,
             color=before.author.color,
         )
+
         embed.add_field(name=_("Now"), value=_("[View message]({})").format(after.jump_url))
+
         if before.attachments:
             embed.add_field(
                 name=_("Attachments"),
@@ -474,9 +514,175 @@ class ActivityLog(commands.Cog):
                     for a in before.attachments
                 ),
             )
+
         embed.set_author(name=before.author, icon_url=before.author.avatar_url)
+
         embed.set_footer(text=_("ID: {} • Sent at").format(before.id))
+
         try:
             await logchannel.send(embed=embed)
+        except discord.Forbidden:
+            pass
+
+
+"""
+This is our listener for members joining
+"""
+    @commands.Cog.listener("on_member_join")
+    async def message_user_join(self, message: discord.Message):
+        # If there is no message then return
+        if not message.guild:
+            return
+
+        #  if the bot is disabled in the message server then return
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+
+        # try to get the logging channel for the messages server
+        logchannel = message.guild.get_channel(
+            await self.config.guild(message.guild).delete_channel()
+        )
+
+        # if the logging channel isn't set then return
+        if not logchannel:
+            return
+
+        # if the message category is in the ignored category for this server then return
+        if (
+                message.channel.category
+                and message.channel.category.id
+                in await self.config.guild(message.guild).ignored_categories()
+        ):
+            return
+
+        # if
+        if any(
+                [
+                    not await self.config.guild(message.guild).deletion(),
+                    (await self.bot.get_context(message)).command,
+                    message.channel.id in await self.config.guild(message.guild).ignored_channels(),
+                    message.author.id in await self.config.guild(message.guild).ignored_users(),
+                    message.author.bot,
+                    message.channel.nsfw and not logchannel.nsfw,
+                ]
+        ):
+            return
+
+        # translate the message to be logged based on server locale
+        await set_contextual_locales_from_guild(self.bot, message.guild)
+
+        # start building the log message
+        embed = discord.Embed(
+            title=_("Message deleted"),
+            description=message.system_content or chat.inline(_("No text")),
+            timestamp=message.created_at,
+            color=message.author.color,
+        )
+
+        # if the message has attachments then add those to the log message.
+        # this should never be needed but I'm leaving it for completeness.
+        if message.attachments:
+            embed.add_field(
+                name=_("Attachments"),
+                value="\n".join(
+                    _("[{0.filename}]({0.url}) ([Cached]({0.proxy_url}))").format(a)
+                    for a in message.attachments
+                ),
+            )
+
+        # get message author from incoming message
+        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+
+        # get information from incoming message
+        embed.set_footer(text=_("ID: {} • Sent at").format(message.id))
+
+        # add information about the channel the message was sent in
+        embed.add_field(name=_("Channel"), value=message.channel.mention)
+
+        # try to send the message
+        try:
+            await logchannel.send(embed=embed)
+        # if we don't have permission then ignore it
+        except discord.Forbidden:
+            pass
+
+"""
+This is our listener for members leaving.
+"""
+    @commands.Cog.listener("on_member_leave")
+    async def message_user_leave(self, message: discord.Message):
+        # If there is no message then return
+        if not message.guild:
+            return
+
+        #  if the bot is disabled in the message server then return
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+
+        # try to get the logging channel for the messages server
+        logchannel = message.guild.get_channel(
+            await self.config.guild(message.guild).delete_channel()
+        )
+
+        # if the logging channel isn't set then return
+        if not logchannel:
+            return
+
+        # if the message category is in the ignored category for this server then return
+        if (
+                message.channel.category
+                and message.channel.category.id
+                in await self.config.guild(message.guild).ignored_categories()
+        ):
+            return
+
+        # if
+        if any(
+                [
+                    not await self.config.guild(message.guild).deletion(),
+                    (await self.bot.get_context(message)).command,
+                    message.channel.id in await self.config.guild(message.guild).ignored_channels(),
+                    message.author.id in await self.config.guild(message.guild).ignored_users(),
+                    message.author.bot,
+                    message.channel.nsfw and not logchannel.nsfw,
+                ]
+        ):
+            return
+
+        # translate the message to be logged based on server locale
+        await set_contextual_locales_from_guild(self.bot, message.guild)
+
+        # start building the log message
+        embed = discord.Embed(
+            title=_("Message deleted"),
+            description=message.system_content or chat.inline(_("No text")),
+            timestamp=message.created_at,
+            color=message.author.color,
+        )
+
+        # if the message has attachments then add those to the log message.
+        # this should never be needed but I'm leaving it for completeness.
+        if message.attachments:
+            embed.add_field(
+                name=_("Attachments"),
+                value="\n".join(
+                    _("[{0.filename}]({0.url}) ([Cached]({0.proxy_url}))").format(a)
+                    for a in message.attachments
+                ),
+            )
+
+        # get message author from incoming message
+        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+
+        # get information from incoming message
+        embed.set_footer(text=_("ID: {} • Sent at").format(message.id))
+
+        # add information about the channel the message was sent in
+        embed.add_field(name=_("Channel"), value=message.channel.mention)
+
+        # try to send the message
+        try:
+            await logchannel.send(embed=embed)
+        # if we don't have permission then ignore it
         except discord.Forbidden:
             pass
