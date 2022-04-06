@@ -40,7 +40,7 @@ _ = Translator("MessagesLog", __file__)
 class UserActivityLog(commands.Cog):
     """Log joins, leaves, deleted and edited messages to the defined channel"""
 
-    __version__ = "1"
+    __version__ = "2.1"
 
     # noinspection PyMissingConstructor
 
@@ -58,6 +58,7 @@ class UserActivityLog(commands.Cog):
             "joining": True,
             "leaving": True,
             "save_bulk": False,
+            "ignore_nsfw": False,
             "ignored_channels": [],
             "ignored_users": [],
             "ignored_categories": [],
@@ -65,10 +66,12 @@ class UserActivityLog(commands.Cog):
         self.config.register_guild(**default_guild)
 
     async def initialize(self):  # sourcery skip: last-if-guard
-        """Update configs
+        """
+        Update configs if required
 
         Versions:
-        1. Copy channel to channel types"""
+        1. Copy channel to channel types
+        """
         if not await self.config.config_version() or await self.config.config_version() < 1:
             log.info("Updating config from version 1 to version 2")
             for guild, data in (await self.config.all_guilds()).items():
@@ -78,9 +81,11 @@ class UserActivityLog(commands.Cog):
                     await guild_config.delete_channel.set(data["channel"])
                     await guild_config.edit_channel.set(data["channel"])
                     await guild_config.bulk_delete_channel.set(data["channel"])
+                    await guild_config.join_channel.set(data["channel"])
+                    await guild_config.leave_channel.set(data["channel"])
                     await guild_config.channel.clear()
-            log.info("Config updated to version 1")
-            await self.config.config_version.set(1)
+            log.info("Config updated to version 2")
+            await self.config.config_version.set(2)
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         pre_processed = super().format_help_for_context(ctx)
@@ -218,17 +223,27 @@ class UserActivityLog(commands.Cog):
         state = _("enabled") if await self.config.guild(ctx.guild).leaving() else _("disabled")
         await ctx.send(chat.info(_("Leave logging {}").format(state)))
 
+    @toggle.command(name="nsfw")
+    async def nsfw_ignore(self, ctx):
+        """Toggle logging of nsfw messages"""
+        ignore_nsfw = self.config.guild(ctx.guild).ignore_nsfw
+        await ignore_nsfw.set(not await ignore_nsfw())
+        state = _("enabled") if await self.config.guild(ctx.guild).ignore_nsfw() else _("disabled")
+        await ctx.send(chat.info(_("Ignore nsfw logging {}").format(state)))
+
     @useractivitylog.command()
     async def ignore(
             self,
             ctx,
             *ignore: Union[discord.Member, discord.TextChannel, discord.CategoryChannel],
     ):
-        """Manage message logging blocklist
+        """
+        Manage message logging blocklist
 
         Shows blocklist if no arguments provided
         You can ignore text channels, categories and members
-        If item is in blocklist, removes it"""
+        If item is in blocklist, removes it
+        """
         if not ignore:
             users = await self.config.guild(ctx.guild).ignored_users()
             channels = await self.config.guild(ctx.guild).ignored_channels()
@@ -274,11 +289,13 @@ class UserActivityLog(commands.Cog):
                         await ignore_config_add(ignored_categories, item)
             await ctx.tick()
 
+    """
+    This is our listener for members deleting messages
+    """
     @commands.Cog.listener("on_message_delete")
     async def message_deleted(self, message: discord.Message):
         if not message.guild:
             return
-
         if await self.bot.cog_disabled_in_guild(self, message.guild):
             return
 
@@ -294,7 +311,6 @@ class UserActivityLog(commands.Cog):
                 in await self.config.guild(message.guild).ignored_categories()
         ):
             return
-
         if any(
                 [
                     not await self.config.guild(message.guild).deletion(),
@@ -315,7 +331,6 @@ class UserActivityLog(commands.Cog):
             timestamp=message.created_at,
             color=message.author.color,
         )
-
         if message.attachments:
             embed.add_field(
                 name=_("Attachments"),
@@ -326,9 +341,7 @@ class UserActivityLog(commands.Cog):
             )
 
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-
         embed.set_footer(text=_("ID: {} • Sent at").format(message.id))
-
         embed.add_field(name=_("Channel"), value=message.channel.mention)
 
         try:
@@ -336,19 +349,19 @@ class UserActivityLog(commands.Cog):
         except discord.Forbidden:
             pass
 
+    """
+    This is our second listener for members deleting messages
+    """
     @commands.Cog.listener("on_raw_message_delete")
     async def raw_message_deleted(self, payload: discord.RawMessageDeleteEvent):
         if payload.cached_message:
             return
-
         if not payload.guild_id:
             return
-
         if await self.bot.cog_disabled_in_guild_raw(self.qualified_name, payload.guild_id):
             return
 
         guild = self.bot.get_guild(payload.guild_id)
-
         channel = self.bot.get_channel(payload.channel_id)
 
         logchannel = guild.get_channel(await self.config.guild(guild).delete_channel())
@@ -371,15 +384,12 @@ class UserActivityLog(commands.Cog):
             return
 
         await set_contextual_locales_from_guild(self.bot, guild)
-
         embed = discord.Embed(
             title=_("Old message deleted"),
             timestamp=discord.utils.snowflake_time(payload.message_id),
             color=await self.bot.get_embed_colour(channel),
         )
-
         embed.set_footer(text=_("ID: {} • Sent at").format(payload.message_id))
-
         embed.add_field(name=_("Channel"), value=channel.mention)
 
         try:
@@ -387,17 +397,18 @@ class UserActivityLog(commands.Cog):
         except discord.Forbidden:
             pass
 
+    """
+    This is our listener for members bulk deleting messages
+    """
     @commands.Cog.listener("on_raw_bulk_message_delete")
     async def raw_bulk_message_deleted(self, payload: discord.RawBulkMessageDeleteEvent):
         # sourcery skip: comprehension-to-generator
         if not payload.guild_id:
             return
-
         if await self.bot.cog_disabled_in_guild_raw(self.qualified_name, payload.guild_id):
             return
 
         guild = self.bot.get_guild(payload.guild_id)
-
         channel = self.bot.get_channel(payload.channel_id)
 
         logchannel = guild.get_channel(await self.config.guild(guild).bulk_delete_channel())
@@ -409,7 +420,6 @@ class UserActivityLog(commands.Cog):
                 and channel.category.id in await self.config.guild(guild).ignored_categories()
         ):
             return
-
         if any(
                 [
                     not await self.config.guild(guild).deletion(),
@@ -464,11 +474,13 @@ class UserActivityLog(commands.Cog):
         except discord.Forbidden:
             pass
 
+    """
+    This is our listener for members editing messages
+    """
     @commands.Cog.listener("on_message_edit")
     async def message_edited(self, before: discord.Message, after: discord.Message):
         if not before.guild:
             return
-
         if await self.bot.cog_disabled_in_guild(self, before.guild):
             return
 
@@ -482,7 +494,6 @@ class UserActivityLog(commands.Cog):
                 in await self.config.guild(before.guild).ignored_categories()
         ):
             return
-
         if any(
                 [
                     not await self.config.guild(before.guild).editing(),
@@ -497,16 +508,13 @@ class UserActivityLog(commands.Cog):
             return
 
         await set_contextual_locales_from_guild(self.bot, before.guild)
-
         embed = discord.Embed(
             title=_("Message edited"),
             description=before.content or chat.inline(_("No text")),
             timestamp=before.created_at,
             color=before.author.color,
         )
-
         embed.add_field(name=_("Now"), value=_("[View message]({})").format(after.jump_url))
-
         if before.attachments:
             embed.add_field(
                 name=_("Attachments"),
@@ -515,9 +523,7 @@ class UserActivityLog(commands.Cog):
                     for a in before.attachments
                 ),
             )
-
         embed.set_author(name=before.author, icon_url=before.author.avatar_url)
-
         embed.set_footer(text=_("ID: {} • Sent at").format(before.id))
 
         try:
@@ -528,7 +534,6 @@ class UserActivityLog(commands.Cog):
     """
     This is our listener for members joining
     """
-
     @commands.Cog.listener("on_member_join")
     async def message_user_join(self, message: discord.Message):
         # If there is no message then return
@@ -552,27 +557,27 @@ class UserActivityLog(commands.Cog):
             return
 
         # if the message category is in the ignored category for this server then return
-        if (
-                message.channel.category
-                and message.channel.category.id
-                in await self.config.guild(message.guild).ignored_categories()
-        ):
-            log.debug("user_join: message category in ignored list for server")
-            return
+        #if (
+        #        message.channel.category
+        #        and message.channel.category.id
+        #        in await self.config.guild(message.guild).ignored_categories()
+        #):
+        #    log.debug("user_join: message category in ignored list for server")
+        #    return
 
         # if message in ignored channel, by ignored user, by bot or in nsfw channel
-        if any(
-                [
-                    not await self.config.guild(message.guild).deletion(),
-                    (await self.bot.get_context(message)).command,
-                    message.channel.id in await self.config.guild(message.guild).ignored_channels(),
-                    message.author.id in await self.config.guild(message.guild).ignored_users(),
-                    message.author.bot,
-                    message.channel.nsfw and not logchannel.nsfw,
-                ]
-        ):
-            log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
-            return
+        #if any(
+        #        [
+        #            not await self.config.guild(message.guild).deletion(),
+        #            (await self.bot.get_context(message)).command,
+        #            message.channel.id in await self.config.guild(message.guild).ignored_channels(),
+        #            message.author.id in await self.config.guild(message.guild).ignored_users(),
+        #            message.author.bot,
+        #            message.channel.nsfw and not logchannel.nsfw,
+        #        ]
+        #):
+        #    log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
+        #    return
 
         # translate the message to be logged based on server locale
         await set_contextual_locales_from_guild(self.bot, message.guild)
@@ -601,7 +606,6 @@ class UserActivityLog(commands.Cog):
     """
     This is our listener for members leaving.
     """
-
     @commands.Cog.listener("on_member_leave")
     async def message_user_leave(self, message: discord.Message):
         # If there is no message then return
@@ -625,27 +629,27 @@ class UserActivityLog(commands.Cog):
             return
 
         # if the message category is in the ignored category for this server then return
-        if (
-                message.channel.category
-                and message.channel.category.id
-                in await self.config.guild(message.guild).ignored_categories()
-        ):
-            log.debug("user_join: message category in ignored list for server")
-            return
+        #if (
+        #        message.channel.category
+        #        and message.channel.category.id
+        #        in await self.config.guild(message.guild).ignored_categories()
+        #):
+        #    log.debug("user_join: message category in ignored list for server")
+        #    return
 
         # if message in ignored channel, by ignored user, by bot or in nsfw channel
-        if any(
-                [
-                    not await self.config.guild(message.guild).deletion(),
-                    (await self.bot.get_context(message)).command,
-                    message.channel.id in await self.config.guild(message.guild).ignored_channels(),
-                    message.author.id in await self.config.guild(message.guild).ignored_users(),
-                    message.author.bot,
-                    message.channel.nsfw and not logchannel.nsfw,
-                ]
-        ):
-            log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
-            return
+        #if any(
+        #        [
+        #            not await self.config.guild(message.guild).deletion(),
+        #            (await self.bot.get_context(message)).command,
+        #            message.channel.id in await self.config.guild(message.guild).ignored_channels(),
+        #            message.author.id in await self.config.guild(message.guild).ignored_users(),
+        #            message.author.bot,
+        #            message.channel.nsfw and not logchannel.nsfw,
+        #        ]
+        #):
+        #    log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
+        #    return
 
         # translate the message to be logged based on server locale
         await set_contextual_locales_from_guild(self.bot, message.guild)
