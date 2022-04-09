@@ -329,7 +329,7 @@ class UserActivityLog(commands.Cog):
             title=_("Message deleted"),
             description=message.system_content or chat.inline(_("No text")),
             timestamp=message.created_at,
-            color=message.author.color,
+            color=discord.Colour.orange(),
         )
         if message.attachments:
             embed.add_field(
@@ -387,7 +387,7 @@ class UserActivityLog(commands.Cog):
         embed = discord.Embed(
             title=_("Old message deleted"),
             timestamp=discord.utils.snowflake_time(payload.message_id),
-            color=await self.bot.get_embed_colour(channel),
+            color=discord.Colour.orange(),
         )
         embed.set_footer(text=_("ID: {} • Sent at").format(payload.message_id))
         embed.add_field(name=_("Channel"), value=channel.mention)
@@ -464,7 +464,7 @@ class UserActivityLog(commands.Cog):
                             else ""
                         ),
             timestamp=datetime.now(timezone.utc),
-            color=await self.bot.get_embed_colour(channel),
+            color=discord.Colour.orange(),
         )
 
         embed.add_field(name=_("Channel"), value=channel.mention)
@@ -512,7 +512,7 @@ class UserActivityLog(commands.Cog):
             title=_("Message edited"),
             description=before.content or chat.inline(_("No text")),
             timestamp=before.created_at,
-            color=before.author.color,
+            color=discord.Colour.teal(),
         )
         embed.add_field(name=_("Now"), value=_("[View message]({})").format(after.jump_url))
         if before.attachments:
@@ -587,7 +587,7 @@ class UserActivityLog(commands.Cog):
             title=_("User Joined"),
             description=chat.inline(_("User has joined the server")),
             timestamp=message.created_at,
-            colour=message.author.color,
+            colour=discord.Colour.green(),
         )
 
         # get message author from incoming message
@@ -659,7 +659,7 @@ class UserActivityLog(commands.Cog):
             title=_("User Left"),
             description=chat.inline(_("User has left the server")),
             timestamp=message.created_at,
-            colour=message.author.color,
+            colour=discord.Colour.red(),
         )
 
         # get message author from incoming message
