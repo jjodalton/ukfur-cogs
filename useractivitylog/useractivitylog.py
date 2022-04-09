@@ -40,7 +40,7 @@ _ = Translator("MessagesLog", __file__)
 class UserActivityLog(commands.Cog):
     """Log joins, leaves, deleted and edited messages to the defined channel"""
 
-    __version__ = "2.1"
+    __version__ = "2.2"
 
     # noinspection PyMissingConstructor
 
@@ -53,10 +53,12 @@ class UserActivityLog(commands.Cog):
             "bulk_delete_channel": None,
             "join_channel": None,
             "leave_channel": None,
+            "boost_channel": None,
             "deletion": True,
             "editing": True,
             "joining": True,
             "leaving": True,
+            "boosting": True,
             "save_bulk": False,
             "ignore_nsfw": False,
             "ignored_channels": [],
@@ -145,6 +147,14 @@ class UserActivityLog(commands.Cog):
         await self.config.guild(ctx.guild).leave_channel.set(channel.id if channel else None)
         await ctx.tick()
 
+    @set_channel.command(name="boost")
+    async def boost_channel(self, ctx, *, channel: discord.TextChannel = None):
+        """Set the channel for boost logs
+
+        If channel is not specified, then logging will be disabled"""
+        await self.config.guild(ctx.guild).boost_channel.set(channel.id if channel else None)
+        await ctx.tick()
+
     @set_channel.command(name="all")
     async def all_channel(self, ctx, *, channel: discord.TextChannel = None):
         """Set the channel for all logs
@@ -155,6 +165,7 @@ class UserActivityLog(commands.Cog):
         await self.config.guild(ctx.guild).bulk_delete_channel.set(channel.id if channel else None)
         await self.config.guild(ctx.guild).join_channel.set(channel.id if channel else None)
         await self.config.guild(ctx.guild).leave_channel.set(channel.id if channel else None)
+        await self.config.guild(ctx.guild).boost_channel.set(channel.id if channel else None)
         await ctx.tick()
 
     @set_channel.command(name="settings")
@@ -171,6 +182,8 @@ class UserActivityLog(commands.Cog):
             settings.append(_("Join: {}").format(ctx.guild.get_channel(join)))
         if leave := await self.config.guild(ctx.guild).leave_channel():
             settings.append(_("Leave: {}").format(ctx.guild.get_channel(leave)))
+        if boost := await self.config.guild(ctx.guild).boost_channel():
+            settings.append(_("Boost: {}").format(ctx.guild.get_channel(boost)))
         await ctx.send("\n".join(settings) or chat.info(_("No channels set")))
 
     @useractivitylog.group()
@@ -222,6 +235,15 @@ class UserActivityLog(commands.Cog):
         await leaving.set(not await leaving())
         state = _("enabled") if await self.config.guild(ctx.guild).leaving() else _("disabled")
         await ctx.send(chat.info(_("Leave logging {}").format(state)))
+
+    @toggle.command(name="boost")
+    @is_channel_set("boost")
+    async def mess_leave(self, ctx):
+        """Toggle logging of boost message"""
+        boosting = self.config.guild(ctx.guild).boosting
+        await boosting.set(not await boosting())
+        state = _("enabled") if await self.config.guild(ctx.guild).boosting() else _("disabled")
+        await ctx.send(chat.info(_("Boost logging {}").format(state)))
 
     @toggle.command(name="nsfw")
     async def nsfw_ignore(self, ctx):
@@ -548,36 +570,13 @@ class UserActivityLog(commands.Cog):
 
         # try to get the logging channel for the messages server
         logchannel = message.guild.get_channel(
-            await self.config.guild(message.guild).delete_channel()
+            await self.config.guild(message.guild).join_channel()
         )
 
         # if the logging channel isn't set then return
         if not logchannel:
             log.debug("user_join: No logchannel return")
             return
-
-        # if the message category is in the ignored category for this server then return
-        #if (
-        #        message.channel.category
-        #        and message.channel.category.id
-        #        in await self.config.guild(message.guild).ignored_categories()
-        #):
-        #    log.debug("user_join: message category in ignored list for server")
-        #    return
-
-        # if message in ignored channel, by ignored user, by bot or in nsfw channel
-        #if any(
-        #        [
-        #            not await self.config.guild(message.guild).deletion(),
-        #            (await self.bot.get_context(message)).command,
-        #            message.channel.id in await self.config.guild(message.guild).ignored_channels(),
-        #            message.author.id in await self.config.guild(message.guild).ignored_users(),
-        #            message.author.bot,
-        #            message.channel.nsfw and not logchannel.nsfw,
-        #        ]
-        #):
-        #    log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
-        #    return
 
         # translate the message to be logged based on server locale
         await set_contextual_locales_from_guild(self.bot, message.guild)
@@ -586,7 +585,7 @@ class UserActivityLog(commands.Cog):
         embed = discord.Embed(
             title=_("User Joined"),
             description=chat.inline(_("User has joined the server")),
-            timestamp=message.created_at,
+            timestamp=datetime.now(timezone.utc),
             colour=discord.Colour.green(),
         )
 
@@ -610,46 +609,23 @@ class UserActivityLog(commands.Cog):
     async def message_user_leave(self, message: discord.Message):
         # If there is no message then return
         if not message.guild:
-            log.debug("user_join: not message.guild return")
+            log.debug("user_leave: not message.guild return")
             return
 
         #  if the bot is disabled in the message server then return
         if await self.bot.cog_disabled_in_guild(self, message.guild):
-            log.debug("user_join: cog disabled in guild return")
+            log.debug("user_leave: cog disabled in guild return")
             return
 
         # try to get the logging channel for the messages server
         logchannel = message.guild.get_channel(
-            await self.config.guild(message.guild).delete_channel()
+            await self.config.guild(message.guild).leave_channel()
         )
 
         # if the logging channel isn't set then return
         if not logchannel:
-            log.debug("user_join: No logchannel return")
+            log.debug("user_leave: No logchannel return")
             return
-
-        # if the message category is in the ignored category for this server then return
-        #if (
-        #        message.channel.category
-        #        and message.channel.category.id
-        #        in await self.config.guild(message.guild).ignored_categories()
-        #):
-        #    log.debug("user_join: message category in ignored list for server")
-        #    return
-
-        # if message in ignored channel, by ignored user, by bot or in nsfw channel
-        #if any(
-        #        [
-        #            not await self.config.guild(message.guild).deletion(),
-        #            (await self.bot.get_context(message)).command,
-        #            message.channel.id in await self.config.guild(message.guild).ignored_channels(),
-        #            message.author.id in await self.config.guild(message.guild).ignored_users(),
-        #            message.author.bot,
-        #            message.channel.nsfw and not logchannel.nsfw,
-        #        ]
-        #):
-        #    log.debug("join_user: message in ignored channel, by ignored user, by bot or in nsfw channel")
-        #    return
 
         # translate the message to be logged based on server locale
         await set_contextual_locales_from_guild(self.bot, message.guild)
@@ -658,7 +634,7 @@ class UserActivityLog(commands.Cog):
         embed = discord.Embed(
             title=_("User Left"),
             description=chat.inline(_("User has left the server")),
-            timestamp=message.created_at,
+            timestamp=datetime.now(timezone.utc),
             colour=discord.Colour.red(),
         )
 
@@ -667,6 +643,62 @@ class UserActivityLog(commands.Cog):
 
         # add information about the channel the message was sent in
         embed.add_field(name=_("Channel"), value=message.channel.mention)
+
+        # try to send the message
+        try:
+            await logchannel.send(embed=embed)
+        # if we don't have permission then ignore it
+        except discord.Forbidden:
+            pass
+
+    """
+    This is our listener for members boosting.
+    """
+    @commands.Cog.listener("on_member_update")
+    async def message_user_boost(self, before: discord.Member, after: discord.Member):
+        # If there is no message then return
+        if not before.guild or not after.guild:
+            log.debug("user_boost: not member.guild return")
+            return
+
+        #  if the bot is disabled in the message server then return
+        if await self.bot.cog_disabled_in_guild(self, before.guild):
+            log.debug("user_boost: cog disabled in guild return")
+            return
+
+        # try to get the logging channel for the messages server
+        logchannel = before.guild.get_channel(
+            await self.config.guild(before.guild).boost_channel()
+        )
+
+        # if the logging channel isn't set then return
+        if not logchannel:
+            log.debug("user_boost: No logchannel return")
+            return
+
+        # translate the message to be logged based on server locale
+        await set_contextual_locales_from_guild(self.bot, before.guild)
+
+        # check the users before and after roles are different
+        if before.roles == after.roles:
+            log.debug("user_boost: roles are equal return")
+            return
+
+        # check if the supporter role is in before.roles
+        if 'Supporter' in before.roles:
+            log.debug("user_boost: User already boosting return")
+            return
+
+        # start building the log message
+        embed = discord.Embed(
+            title=_("User Boosted"),
+            description=chat.inline(_("User has boosted the server")),
+            timestamp=datetime.now(timezone.utc),
+            colour=discord.Colour.purple(),
+        )
+
+        # get message author from incoming message
+        embed.set_author(name=before.name, icon_url=before.avatar_url)
 
         # try to send the message
         try:
