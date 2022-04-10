@@ -590,10 +590,7 @@ class UserActivityLog(commands.Cog):
         )
 
         # get message author from incoming message
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-
-        # add information about the channel the message was sent in
-        embed.add_field(name=_("Channel"), value=message.channel.mention)
+        embed.set_author(name=message.name, icon_url=message.avatar_url)
 
         # try to send the message
         try:
@@ -639,10 +636,7 @@ class UserActivityLog(commands.Cog):
         )
 
         # get message author from incoming message
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-
-        # add information about the channel the message was sent in
-        embed.add_field(name=_("Channel"), value=message.channel.mention)
+        embed.set_author(name=message.name, icon_url=message.avatar_url)
 
         # try to send the message
         try:
