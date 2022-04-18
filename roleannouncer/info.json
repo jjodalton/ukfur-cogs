@@ -1,0 +1,15 @@
+{
+  "author": [
+    "Hooskworks"
+  ],
+  "install_msg": "Thanks for the install!",
+  "short": "joins and boosts announced to specific channel",
+  "description": "Sends an announcement message from the bot in a specified channel when a user joins or boosts the server",
+  "min_bot_version": "3.4.0",
+  "tags": [
+    "join",
+    "boost",
+    "announce"
+  ],
+  "end_user_data_statement": "This cog does not persistently store data or metadata about users."
+}
