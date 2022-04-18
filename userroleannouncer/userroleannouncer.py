@@ -180,38 +180,61 @@ class UserRoleAnnouncer(commands.Cog):
     async def message_user_boost(self, before: discord.Member, after: discord.Member):
         # If there is no message then return
         if not before.guild or not after.guild:
-            log.debug("user_boost: not member.guild return")
+            log.debug("user_update: not member.guild return")
             return
 
         #  if the bot is disabled in the message server then return
         if await self.bot.cog_disabled_in_guild(self, before.guild):
-            log.debug("user_boost: cog disabled in guild return")
+            log.debug("user_update: cog disabled in guild return")
             return
 
-        # try to get the logging channel for the messages server
-        logchannel = before.guild.get_channel(
+        # check the users before and after roles are different
+        # this event handler can fire for a number of reasons not just role update
+        if before.roles == after.roles:
+            log.debug("user_update: roles are equal return")
+            return
+
+        # This handler is not complete
+        log.debug("user_update: incomplete handler return")
+        return
+
+
+        # decide if we're boosting or joining
+        # if member in before and after we could be boosting
+            # if boost in before and after then we've run out of things to check
+            # else if boost not in before and is in after then we got a boost
+            # else boost not in either or another role changed
+        # else
+
+
+
+        # try to get the announcement channel for boost messages
+        announcechannel = before.guild.get_channel(
             await self.config.guild(before.guild).boost_channel()
         )
 
-        # if the logging channel isn't set then return
-        if not logchannel:
-            log.debug("user_boost: No logchannel return")
+        # if the announcement channel isn't set then return
+        if not announcechannel:
+            log.debug("user_update: No boost logchannel return")
             return
+
+
+        # try to get the announcement channel for join messages
+        announcechannel = before.guild.get_channel(
+            await self.config.guild(before.guild).join_channel()
+        )
+
+        # if the announcement channel isn't set then return
+        if not announcechannel:
+            log.debug("user_update: No join logchannel return")
+            return
+
 
         # translate the message to be logged based on server locale
         await set_contextual_locales_from_guild(self.bot, before.guild)
 
-        # check the users before and after roles are different
-        if before.roles == after.roles:
-            log.debug("user_boost: roles are equal return")
-            return
 
-        # check if the supporter role is in before.roles
-        if 'Supporter' in before.roles:
-            log.debug("user_boost: User already boosting return")
-            return
-
-        # start building the log message
+        # build the message to send to a channel
         embed = discord.Embed(
             title=_("User Boosted"),
             description=chat.inline(_("User has boosted the server")),
@@ -219,12 +242,11 @@ class UserRoleAnnouncer(commands.Cog):
             colour=discord.Colour.purple(),
         )
 
-        # get message author from incoming message
+        # Set message author from incoming member
         embed.set_author(name=before.name, icon_url=before.avatar_url)
 
         # try to send the message
         try:
-            await logchannel.send(embed=embed)
-        # if we don't have permission then ignore it
+            await announcechannel.send(embed=embed)
         except discord.Forbidden:
             pass
